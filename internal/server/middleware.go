@@ -3,6 +3,7 @@ package server
 import (
 	"crypto/rand"
 	"encoding/hex"
+	"log/slog"
 	"net/http"
 	"strings"
 )
@@ -25,53 +26,62 @@ func securityHeaders(next http.Handler) http.Handler {
 const csrfCookieName = "_csrf"
 const csrfFormField = "_csrf"
 
-func csrfProtect(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.Method == http.MethodGet || r.Method == http.MethodHead {
-			// Set CSRF cookie if not present
-			if _, err := r.Cookie(csrfCookieName); err != nil {
-				token := generateCSRFToken()
-				http.SetCookie(w, &http.Cookie{
-					Name:     csrfCookieName,
-					Value:    token,
-					Path:     "/",
-					HttpOnly: true,
-					SameSite: http.SameSiteStrictMode,
-				})
+func csrfProtect(baseURL string) func(http.Handler) http.Handler {
+	secure := strings.HasPrefix(baseURL, "https://")
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if r.Method == http.MethodGet || r.Method == http.MethodHead {
+				// Set CSRF cookie if not present
+				if _, err := r.Cookie(csrfCookieName); err != nil {
+					token, err := generateCSRFToken()
+					if err != nil {
+						slog.Error("failed to generate CSRF token", "error", err)
+						http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+						return
+					}
+					http.SetCookie(w, &http.Cookie{
+						Name:     csrfCookieName,
+						Value:    token,
+						Path:     "/",
+						HttpOnly: true,
+						Secure:   secure,
+						SameSite: http.SameSiteStrictMode,
+					})
+				}
+				// Wrap response writer to inject CSRF hidden fields into forms
+				cw := &csrfResponseWriter{ResponseWriter: w, r: r}
+				next.ServeHTTP(cw, r)
+				return
 			}
-			// Wrap response writer to inject CSRF hidden fields into forms
-			cw := &csrfResponseWriter{ResponseWriter: w, r: r}
-			next.ServeHTTP(cw, r)
-			return
-		}
 
-		if r.Method == http.MethodPost {
-			cookie, err := r.Cookie(csrfCookieName)
-			if err != nil || cookie.Value == "" {
-				http.Error(w, "Forbidden: missing CSRF token", http.StatusForbidden)
-				return
+			if r.Method == http.MethodPost {
+				cookie, err := r.Cookie(csrfCookieName)
+				if err != nil || cookie.Value == "" {
+					http.Error(w, "Forbidden: missing CSRF token", http.StatusForbidden)
+					return
+				}
+				if err := r.ParseForm(); err != nil {
+					http.Error(w, "Bad Request", http.StatusBadRequest)
+					return
+				}
+				formToken := r.FormValue(csrfFormField)
+				if formToken == "" || formToken != cookie.Value {
+					http.Error(w, "Forbidden: CSRF token mismatch", http.StatusForbidden)
+					return
+				}
 			}
-			if err := r.ParseForm(); err != nil {
-				http.Error(w, "Bad Request", http.StatusBadRequest)
-				return
-			}
-			formToken := r.FormValue(csrfFormField)
-			if formToken == "" || formToken != cookie.Value {
-				http.Error(w, "Forbidden: CSRF token mismatch", http.StatusForbidden)
-				return
-			}
-		}
 
-		next.ServeHTTP(w, r)
-	})
+			next.ServeHTTP(w, r)
+		})
+	}
 }
 
-func generateCSRFToken() string {
+func generateCSRFToken() (string, error) {
 	b := make([]byte, 32)
 	if _, err := rand.Read(b); err != nil {
-		panic("crypto/rand failure: " + err.Error())
+		return "", err
 	}
-	return hex.EncodeToString(b)
+	return hex.EncodeToString(b), nil
 }
 
 type csrfResponseWriter struct {

@@ -20,8 +20,15 @@ COPY --from=builder /bin/moidc /usr/local/bin/moidc
 COPY --from=builder /src/static /app/static
 COPY litestream.yml /etc/litestream.yml
 
+RUN addgroup -g 999 moidc && adduser -D -u 999 -G moidc moidc
+RUN mkdir -p /data && chown moidc:moidc /data
+
 WORKDIR /app
 ENV MOIDC_DB_PATH=/data/moidc.db
 EXPOSE 8080
+
+USER moidc
+
+HEALTHCHECK --interval=30s --timeout=3s CMD wget -q --spider http://localhost:8080/.well-known/openid-configuration || exit 1
 
 CMD ["litestream", "replicate", "-exec", "moidc"]

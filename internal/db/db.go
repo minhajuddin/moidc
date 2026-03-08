@@ -4,7 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 	"io/fs"
-	"log"
+	"log/slog"
 	"strings"
 
 	_ "github.com/mattn/go-sqlite3"
@@ -26,6 +26,9 @@ func Open(path string, migrationsFS fs.FS) (*DB, error) {
 	if err := sqlDB.Ping(); err != nil {
 		return nil, fmt.Errorf("pinging database: %w", err)
 	}
+	sqlDB.SetMaxOpenConns(5)
+	sqlDB.SetMaxIdleConns(2)
+
 	d := &DB{sqlDB}
 	if err := d.migrate(migrationsFS); err != nil {
 		return nil, fmt.Errorf("running migrations: %w", err)
@@ -81,7 +84,7 @@ func (d *DB) migrate(migrationsFS fs.FS) error {
 			return fmt.Errorf("committing migration %s: %w", name, err)
 		}
 
-		log.Printf("Applied migration: %s", name)
+		slog.Info("applied migration", "name", name)
 	}
 
 	return nil

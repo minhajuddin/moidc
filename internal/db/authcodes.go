@@ -1,6 +1,7 @@
 package db
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
 	"time"
@@ -76,6 +77,16 @@ func parseFlexibleTime(s string) (time.Time, error) {
 		}
 	}
 	return time.Time{}, fmt.Errorf("cannot parse time %q", s)
+}
+
+func (d *DB) CleanupExpiredCodes(ctx context.Context) (int64, error) {
+	result, err := d.ExecContext(ctx,
+		`DELETE FROM authorization_codes WHERE expires_at < datetime('now') OR (used_at IS NOT NULL AND used_at < datetime('now', '-1 hour'))`,
+	)
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected()
 }
 
 func (d *DB) MarkAuthCodeUsed(codeHash string) error {

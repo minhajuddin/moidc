@@ -9,7 +9,7 @@ import (
 	"encoding/pem"
 	"errors"
 	"fmt"
-	"log"
+	"log/slog"
 
 	"github.com/minhajuddin/moidc/internal/db"
 )
@@ -49,7 +49,7 @@ func (km *KeyManager) ensureSigningKey() error {
 		}
 		km.signingKey = privKey
 		km.signingKID = key.KID
-		log.Printf("Loaded existing signing key: %s", key.KID)
+		slog.Info("loaded existing signing key", "kid", key.KID)
 		return nil
 	}
 
@@ -63,14 +63,17 @@ func (km *KeyManager) ensureSigningKey() error {
 		Bytes: x509.MarshalPKCS1PrivateKey(privKey),
 	})
 
-	kid := generateKID()
+	kid, err := generateKID()
+	if err != nil {
+		return err
+	}
 	if err := km.db.CreateSigningKey(kid, string(pemBytes), "RS256", "signing"); err != nil {
 		return fmt.Errorf("storing signing key: %w", err)
 	}
 
 	km.signingKey = privKey
 	km.signingKID = kid
-	log.Printf("Generated new signing key: %s", kid)
+	slog.Info("generated new signing key", "kid", kid)
 	return nil
 }
 
@@ -86,7 +89,7 @@ func (km *KeyManager) ensureEncryptionKey() error {
 		}
 		km.encKey = b
 		km.encKID = key.KID
-		log.Printf("Loaded existing encryption key: %s", key.KID)
+		slog.Info("loaded existing encryption key", "kid", key.KID)
 		return nil
 	}
 
@@ -95,14 +98,17 @@ func (km *KeyManager) ensureEncryptionKey() error {
 		return fmt.Errorf("generating AES key: %w", err)
 	}
 
-	kid := generateKID()
+	kid, err := generateKID()
+	if err != nil {
+		return err
+	}
 	if err := km.db.CreateSigningKey(kid, hex.EncodeToString(aesKey), "A256GCM", "encryption"); err != nil {
 		return fmt.Errorf("storing encryption key: %w", err)
 	}
 
 	km.encKey = aesKey
 	km.encKID = kid
-	log.Printf("Generated new encryption key: %s", kid)
+	slog.Info("generated new encryption key", "kid", kid)
 	return nil
 }
 
@@ -118,10 +124,10 @@ func (km *KeyManager) EncryptionKey() []byte {
 	return km.encKey
 }
 
-func generateKID() string {
+func generateKID() (string, error) {
 	b := make([]byte, 8)
 	if _, err := rand.Read(b); err != nil {
-		panic("crypto/rand failure: " + err.Error())
+		return "", fmt.Errorf("generating KID: %w", err)
 	}
-	return hex.EncodeToString(b)
+	return hex.EncodeToString(b), nil
 }

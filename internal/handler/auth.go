@@ -6,6 +6,7 @@ import (
 	"encoding/base64"
 	"encoding/hex"
 	"fmt"
+	"log/slog"
 	"net/http"
 	"net/url"
 	"strings"
@@ -14,6 +15,12 @@ import (
 	"github.com/minhajuddin/moidc/internal/db"
 	"github.com/minhajuddin/moidc/internal/oidc"
 	"github.com/minhajuddin/moidc/templates"
+)
+
+const (
+	authCodeExpiry = 10 * time.Minute
+	tokenExpiry    = 1 * time.Hour
+	maxTOMLSize    = 10240 // 10KB
 )
 
 const defaultTOML = `name = "Jane Doe"
@@ -35,6 +42,7 @@ func NewAuthHandler(database *db.DB, keyManager *oidc.KeyManager, baseURL string
 
 func (h *AuthHandler) Authorize(w http.ResponseWriter, r *http.Request) {
 	clientID := r.URL.Query().Get("client_id")
+	slog.Info("auth flow started", "client_id", clientID)
 	redirectURI := r.URL.Query().Get("redirect_uri")
 	scope := r.URL.Query().Get("scope")
 	state := r.URL.Query().Get("state")
@@ -95,6 +103,8 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 	codeChallenge := r.FormValue("code_challenge")
 	codeChallengeMethod := r.FormValue("code_challenge_method")
 
+	slog.Info("login attempt", "email", email, "client_id", clientID)
+
 	if email == "" {
 		renderError(w, r, "Validation Error", "Email is required.", http.StatusBadRequest)
 		return
@@ -130,9 +140,11 @@ func (h *AuthHandler) Consent(w http.ResponseWriter, r *http.Request) {
 	profileTOML := r.FormValue("profile_toml")
 
 	if action == "deny" {
+		slog.Info("consent denied", "client_id", clientID, "email", email)
 		redirectWithError(w, r, redirectURI, state, "access_denied", "User denied the request")
 		return
 	}
+	slog.Info("consent approved", "client_id", clientID, "email", email)
 
 	client, err := h.db.GetClient(clientID)
 	if err != nil {
@@ -146,6 +158,10 @@ func (h *AuthHandler) Consent(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Validate TOML claims
+	if len(profileTOML) > maxTOMLSize {
+		renderError(w, r, "Invalid Claims", "Profile data too large (max 10KB).", http.StatusBadRequest)
+		return
+	}
 	if profileTOML != "" {
 		if _, err := oidc.ParseTOMLClaims(profileTOML); err != nil {
 			renderError(w, r, "Invalid Claims", "Invalid profile data. Please check your TOML syntax and ensure only scalar values are used.", http.StatusBadRequest)
@@ -172,7 +188,7 @@ func (h *AuthHandler) Consent(w http.ResponseWriter, r *http.Request) {
 		CodeChallenge:       codeChallenge,
 		CodeChallengeMethod: codeChallengeMethod,
 		ProfileSnapshot:     profileTOML,
-		ExpiresAt:           time.Now().Add(10 * time.Minute),
+		ExpiresAt:           time.Now().Add(authCodeExpiry),
 	}
 
 	if err := h.db.CreateAuthCode(authCode); err != nil {
@@ -215,6 +231,7 @@ func (h *AuthHandler) Token(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if _, err := h.db.ValidateClientSecret(clientID, clientSecret); err != nil {
+		slog.Warn("failed client auth", "client_id", clientID)
 		tokenError(w, "invalid_client", "Client authentication failed.", http.StatusUnauthorized)
 		return
 	}
@@ -281,8 +298,8 @@ func (h *AuthHandler) Token(w http.ResponseWriter, r *http.Request) {
 		Extra:    extraClaims,
 	}
 
-	idTokenExpiry := 1 * time.Hour
-	accessTokenExpiry := 1 * time.Hour
+	idTokenExpiry := tokenExpiry
+	accessTokenExpiry := tokenExpiry
 
 	// Create access token first so we can compute at_hash for the ID token
 	accessToken, err := oidc.CreateAccessToken(h.keyManager.EncryptionKey(), tokenClaims, accessTokenExpiry)
@@ -297,6 +314,8 @@ func (h *AuthHandler) Token(w http.ResponseWriter, r *http.Request) {
 		tokenError(w, "server_error", "Could not create ID token.", http.StatusInternalServerError)
 		return
 	}
+
+	slog.Info("token exchange success", "client_id", clientID)
 
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set("Cache-Control", "no-store")

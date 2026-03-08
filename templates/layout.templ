@@ -1,0 +1,27 @@
+package templates
+
+templ Layout(title string) {
+	<!DOCTYPE html>
+	<html lang="en">
+		<head>
+			<meta charset="UTF-8"/>
+			<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+			<title>{ title } - moidc</title>
+			<link rel="stylesheet" href="/static/output.css"/>
+		</head>
+		<body class="bg-gray-50 min-h-screen">
+			<div class="bg-red-600 text-white text-center py-2 px-4 font-bold text-sm">
+				This is a demo OIDC server. Do not use in production.
+			</div>
+			<div class="max-w-2xl mx-auto px-4 py-8">
+				<header class="mb-8">
+					<a href="/" class="text-2xl font-bold text-gray-900">moidc</a>
+					<p class="text-gray-500 text-sm">Minimum OIDC Server</p>
+				</header>
+				<main>
+					{ children... }
+				</main>
+			</div>
+		</body>
+	</html>
+}

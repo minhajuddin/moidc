@@ -1,0 +1,31 @@
+package templates
+
+templ Home(baseURL string) {
+	@Layout("Home") {
+		<div class="space-y-6">
+			<h1 class="text-3xl font-bold text-gray-900">Welcome to moidc</h1>
+			<p class="text-gray-600">
+				A minimal OpenID Connect server for testing and learning OIDC flows.
+				No passwords, no email verification — just enter an email and customize your token payload via TOML.
+			</p>
+			<div class="bg-white rounded-lg shadow p-6 space-y-4">
+				<h2 class="text-xl font-semibold text-gray-800">Getting Started</h2>
+				<ol class="list-decimal list-inside space-y-2 text-gray-600">
+					<li><a href="/clients/register" class="text-blue-600 hover:underline">Register a client</a> to get your client_id and client_secret</li>
+					<li>Use the standard OIDC authorization code flow to authenticate users</li>
+					<li>Customize ID token claims using TOML on the consent screen</li>
+				</ol>
+			</div>
+			<div class="bg-white rounded-lg shadow p-6 space-y-4">
+				<h2 class="text-xl font-semibold text-gray-800">Endpoints</h2>
+				<div class="font-mono text-sm space-y-1 text-gray-600">
+					<p>Discovery: <a href="/.well-known/openid-configuration" class="text-blue-600 hover:underline">{ baseURL }/.well-known/openid-configuration</a></p>
+					<p>JWKS: <a href="/.well-known/jwks.json" class="text-blue-600 hover:underline">{ baseURL }/.well-known/jwks.json</a></p>
+					<p>Authorization: { baseURL }/authorize</p>
+					<p>Token: { baseURL }/token</p>
+					<p>UserInfo: { baseURL }/userinfo</p>
+				</div>
+			</div>
+		</div>
+	}
+}

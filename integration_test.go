@@ -7,10 +7,12 @@ import (
 	"io"
 	"io/fs"
 	"net/http"
-	"path/filepath"
+	"net/http/cookiejar"
 	"net/http/httptest"
 	"net/url"
+	"path/filepath"
 	"strings"
+	"sync"
 	"testing"
 
 	moidc "github.com/minhajuddin/moidc"
@@ -52,12 +54,40 @@ func setupTestServer(t *testing.T) (*httptest.Server, *db.DB) {
 	return ts, database
 }
 
+// getCSRFToken makes a GET request and extracts the CSRF cookie value
+func getCSRFToken(t *testing.T, client *http.Client, getURL string) string {
+	t.Helper()
+	resp, err := client.Get(getURL)
+	if err != nil {
+		t.Fatalf("GET %s: %v", getURL, err)
+	}
+	resp.Body.Close()
+	if resp.StatusCode != 200 {
+		t.Fatalf("expected 200 from %s, got %d", getURL, resp.StatusCode)
+	}
+	u, _ := url.Parse(getURL)
+	for _, cookie := range client.Jar.Cookies(u) {
+		if cookie.Name == "_csrf" {
+			return cookie.Value
+		}
+	}
+	t.Fatalf("no _csrf cookie set by %s", getURL)
+	return ""
+}
+
+func testClient(ts *httptest.Server) *http.Client {
+	jar, _ := cookiejar.New(nil)
+	client := ts.Client()
+	client.Jar = jar
+	client.CheckRedirect = func(req *http.Request, via []*http.Request) error {
+		return http.ErrUseLastResponse
+	}
+	return client
+}
+
 func TestFullOIDCFlow(t *testing.T) {
 	ts, database := setupTestServer(t)
-	client := ts.Client()
-	client.CheckRedirect = func(req *http.Request, via []*http.Request) error {
-		return http.ErrUseLastResponse // don't follow redirects
-	}
+	client := testClient(ts)
 
 	// Step 1: Register a client
 	redirectURI := "http://localhost:9999/callback"
@@ -71,19 +101,12 @@ func TestFullOIDCFlow(t *testing.T) {
 	challengeHash := sha256.Sum256([]byte(codeVerifier))
 	codeChallenge := base64.RawURLEncoding.EncodeToString(challengeHash[:])
 
-	// Step 3: Start authorization
+	// Step 3: Start authorization (also gets CSRF cookie)
 	authURL := ts.URL + "/authorize?response_type=code&client_id=test_client_id&redirect_uri=" +
 		url.QueryEscape(redirectURI) + "&scope=openid+profile+email&state=teststate&nonce=testnonce" +
 		"&code_challenge=" + codeChallenge + "&code_challenge_method=S256"
 
-	resp, err := client.Get(authURL)
-	if err != nil {
-		t.Fatalf("GET /authorize: %v", err)
-	}
-	resp.Body.Close()
-	if resp.StatusCode != 200 {
-		t.Fatalf("expected 200 from /authorize, got %d", resp.StatusCode)
-	}
+	csrfToken := getCSRFToken(t, client, authURL)
 
 	// Step 4: Login (POST email)
 	loginData := url.Values{
@@ -95,8 +118,9 @@ func TestFullOIDCFlow(t *testing.T) {
 		"nonce":                 {"testnonce"},
 		"code_challenge":        {codeChallenge},
 		"code_challenge_method": {"S256"},
+		"_csrf":                 {csrfToken},
 	}
-	resp, err = client.PostForm(ts.URL+"/authorize/login", loginData)
+	resp, err := client.PostForm(ts.URL+"/authorize/login", loginData)
 	if err != nil {
 		t.Fatalf("POST /authorize/login: %v", err)
 	}
@@ -117,6 +141,7 @@ func TestFullOIDCFlow(t *testing.T) {
 		"code_challenge":        {codeChallenge},
 		"code_challenge_method": {"S256"},
 		"profile_toml":          {"name = \"Jane Doe\"\nrole = \"admin\""},
+		"_csrf":                 {csrfToken},
 	}
 	resp, err = client.PostForm(ts.URL+"/authorize/consent", consentData)
 	if err != nil {
@@ -202,6 +227,12 @@ func TestFullOIDCFlow(t *testing.T) {
 	if idClaims["nonce"] != "testnonce" {
 		t.Errorf("expected nonce=testnonce, got %v", idClaims["nonce"])
 	}
+	if idClaims["auth_time"] == nil {
+		t.Error("expected auth_time claim to be present")
+	}
+	if idClaims["at_hash"] == nil {
+		t.Error("expected at_hash claim to be present")
+	}
 
 	// Step 8: UserInfo
 	accessToken := tokenResp["access_token"].(string)
@@ -250,6 +281,13 @@ func TestDiscoveryEndpoint(t *testing.T) {
 	if doc["authorization_endpoint"] != ts.URL+"/authorize" {
 		t.Errorf("unexpected authorization_endpoint: %v", doc["authorization_endpoint"])
 	}
+	// Verify new discovery fields
+	if doc["grant_types_supported"] == nil {
+		t.Error("expected grant_types_supported in discovery")
+	}
+	if doc["response_modes_supported"] == nil {
+		t.Error("expected response_modes_supported in discovery")
+	}
 }
 
 func TestJWKSEndpoint(t *testing.T) {
@@ -268,12 +306,15 @@ func TestJWKSEndpoint(t *testing.T) {
 	var jwks map[string]interface{}
 	json.NewDecoder(resp.Body).Decode(&jwks)
 
-	keys := jwks["keys"].([]interface{})
-	if len(keys) == 0 {
+	keys, ok := jwks["keys"].([]interface{})
+	if !ok || len(keys) == 0 {
 		t.Fatal("expected at least one key in JWKS")
 	}
 
-	key := keys[0].(map[string]interface{})
+	key, ok := keys[0].(map[string]interface{})
+	if !ok {
+		t.Fatal("expected key to be a map")
+	}
 	if key["kty"] != "RSA" {
 		t.Errorf("expected kty=RSA, got %v", key["kty"])
 	}
@@ -282,3 +323,142 @@ func TestJWKSEndpoint(t *testing.T) {
 	}
 }
 
+func TestCSRFProtection(t *testing.T) {
+	ts, _ := setupTestServer(t)
+	client := testClient(ts)
+
+	// POST without CSRF token should be rejected
+	loginData := url.Values{
+		"email":     {"user@example.com"},
+		"client_id": {"test_client_id"},
+	}
+	resp, err := client.PostForm(ts.URL+"/authorize/login", loginData)
+	if err != nil {
+		t.Fatalf("POST /authorize/login: %v", err)
+	}
+	resp.Body.Close()
+	if resp.StatusCode != 403 {
+		t.Fatalf("expected 403 without CSRF token, got %d", resp.StatusCode)
+	}
+}
+
+func TestSecurityHeaders(t *testing.T) {
+	ts, _ := setupTestServer(t)
+
+	resp, err := http.Get(ts.URL + "/.well-known/openid-configuration")
+	if err != nil {
+		t.Fatal(err)
+	}
+	resp.Body.Close()
+
+	if resp.Header.Get("X-Content-Type-Options") != "nosniff" {
+		t.Error("missing X-Content-Type-Options: nosniff")
+	}
+	if resp.Header.Get("X-Frame-Options") != "DENY" {
+		t.Error("missing X-Frame-Options: DENY")
+	}
+}
+
+func TestConcurrentCodeExchange(t *testing.T) {
+	ts, database := setupTestServer(t)
+	client := testClient(ts)
+
+	redirectURI := "http://localhost:9999/callback"
+	err := database.CreateClient("race_client_id", "race_client_secret", "Race App", "dev@test.com", []string{redirectURI})
+	if err != nil {
+		t.Fatalf("CreateClient: %v", err)
+	}
+
+	codeVerifier := "dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk"
+	challengeHash := sha256.Sum256([]byte(codeVerifier))
+	codeChallenge := base64.RawURLEncoding.EncodeToString(challengeHash[:])
+
+	authURL := ts.URL + "/authorize?response_type=code&client_id=race_client_id&redirect_uri=" +
+		url.QueryEscape(redirectURI) + "&scope=openid&state=s&nonce=n" +
+		"&code_challenge=" + codeChallenge + "&code_challenge_method=S256"
+
+	csrfToken := getCSRFToken(t, client, authURL)
+
+	// Login
+	loginData := url.Values{
+		"email": {"user@example.com"}, "client_id": {"race_client_id"},
+		"redirect_uri": {redirectURI}, "scope": {"openid"}, "state": {"s"}, "nonce": {"n"},
+		"code_challenge": {codeChallenge}, "code_challenge_method": {"S256"}, "_csrf": {csrfToken},
+	}
+	resp, err := client.PostForm(ts.URL+"/authorize/login", loginData)
+	if err != nil {
+		t.Fatal(err)
+	}
+	resp.Body.Close()
+
+	// Consent
+	consentData := url.Values{
+		"action": {"approve"}, "client_id": {"race_client_id"}, "email": {"user@example.com"},
+		"redirect_uri": {redirectURI}, "scope": {"openid"}, "state": {"s"}, "nonce": {"n"},
+		"code_challenge": {codeChallenge}, "code_challenge_method": {"S256"}, "_csrf": {csrfToken},
+	}
+	resp, err = client.PostForm(ts.URL+"/authorize/consent", consentData)
+	if err != nil {
+		t.Fatal(err)
+	}
+	resp.Body.Close()
+	location := resp.Header.Get("Location")
+	redirectedURL, _ := url.Parse(location)
+	code := redirectedURL.Query().Get("code")
+	if code == "" {
+		t.Fatal("no code in redirect")
+	}
+
+	// Try to exchange the same code concurrently
+	var wg sync.WaitGroup
+	successes := 0
+	var mu sync.Mutex
+
+	for i := 0; i < 5; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			tokenData := url.Values{
+				"grant_type": {"authorization_code"}, "code": {code},
+				"redirect_uri": {redirectURI}, "client_id": {"race_client_id"},
+				"client_secret": {"race_client_secret"}, "code_verifier": {codeVerifier},
+			}
+			resp, err := client.PostForm(ts.URL+"/token", tokenData)
+			if err != nil {
+				return
+			}
+			defer resp.Body.Close()
+			if resp.StatusCode == 200 {
+				mu.Lock()
+				successes++
+				mu.Unlock()
+			}
+		}()
+	}
+	wg.Wait()
+
+	if successes != 1 {
+		t.Errorf("expected exactly 1 successful exchange, got %d", successes)
+	}
+}
+
+func TestUserInfoErrorResponse(t *testing.T) {
+	ts, _ := setupTestServer(t)
+
+	// No auth header
+	resp, err := http.Get(ts.URL + "/userinfo")
+	if err != nil {
+		t.Fatal(err)
+	}
+	resp.Body.Close()
+
+	if resp.StatusCode != 401 {
+		t.Fatalf("expected 401, got %d", resp.StatusCode)
+	}
+	if resp.Header.Get("WWW-Authenticate") == "" {
+		t.Error("missing WWW-Authenticate header on 401")
+	}
+	if resp.Header.Get("Content-Type") != "application/json" {
+		t.Errorf("expected Content-Type application/json, got %s", resp.Header.Get("Content-Type"))
+	}
+}

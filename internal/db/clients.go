@@ -2,6 +2,7 @@ package db
 
 import (
 	"crypto/sha256"
+	"crypto/subtle"
 	"encoding/json"
 	"fmt"
 )
@@ -48,7 +49,7 @@ func (d *DB) ValidateClientSecret(clientID, clientSecret string) (*Client, error
 	if err != nil {
 		return nil, err
 	}
-	if client.ClientSecretHash != sha256Hash(clientSecret) {
+	if subtle.ConstantTimeCompare([]byte(client.ClientSecretHash), []byte(sha256Hash(clientSecret))) != 1 {
 		return nil, fmt.Errorf("invalid client secret")
 	}
 	return client, nil

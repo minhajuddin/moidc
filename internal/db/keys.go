@@ -28,19 +28,3 @@ func (d *DB) CreateSigningKey(kid, privateKeyPEM, algorithm, keyType string) err
 	return err
 }
 
-func (d *DB) GetAllActiveSigningKeys() ([]SigningKey, error) {
-	rows, err := d.Query("SELECT kid, private_key_pem, algorithm, key_type, active FROM signing_keys WHERE active = 1")
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var keys []SigningKey
-	for rows.Next() {
-		var k SigningKey
-		if err := rows.Scan(&k.KID, &k.PrivateKeyPEM, &k.Algorithm, &k.KeyType, &k.Active); err != nil {
-			return nil, err
-		}
-		keys = append(keys, k)
-	}
-	return keys, rows.Err()
-}

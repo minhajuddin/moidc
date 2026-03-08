@@ -4,6 +4,7 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"net/http"
+	"net/url"
 	"strings"
 
 	"github.com/minhajuddin/moidc/internal/db"
@@ -37,10 +38,24 @@ func (h *ClientHandler) Register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if len(clientName) > 255 {
+		renderError(w, r, "Validation Error", "Client name is too long (max 255 characters).", http.StatusBadRequest)
+		return
+	}
+
 	var redirectURIs []string
 	for _, uri := range strings.Split(redirectURIsRaw, "\n") {
 		uri = strings.TrimSpace(uri)
 		if uri != "" {
+			parsed, err := url.Parse(uri)
+			if err != nil {
+				renderError(w, r, "Validation Error", "Invalid redirect URI: "+uri, http.StatusBadRequest)
+				return
+			}
+			if parsed.Scheme != "https" && !(parsed.Scheme == "http" && (parsed.Hostname() == "localhost" || parsed.Hostname() == "127.0.0.1")) {
+				renderError(w, r, "Validation Error", "Redirect URIs must use https (or http://localhost for development).", http.StatusBadRequest)
+				return
+			}
 			redirectURIs = append(redirectURIs, uri)
 		}
 	}
@@ -62,7 +77,9 @@ func (h *ClientHandler) Register(w http.ResponseWriter, r *http.Request) {
 
 func randomHex(n int) string {
 	b := make([]byte, n/2)
-	rand.Read(b)
+	if _, err := rand.Read(b); err != nil {
+		panic("crypto/rand failure: " + err.Error())
+	}
 	return hex.EncodeToString(b)
 }
 

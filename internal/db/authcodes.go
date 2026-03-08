@@ -79,9 +79,19 @@ func parseFlexibleTime(s string) (time.Time, error) {
 }
 
 func (d *DB) MarkAuthCodeUsed(codeHash string) error {
-	_, err := d.Exec(
-		"UPDATE authorization_codes SET used_at = datetime('now') WHERE code_hash = ?",
+	result, err := d.Exec(
+		"UPDATE authorization_codes SET used_at = datetime('now') WHERE code_hash = ? AND used_at IS NULL",
 		codeHash,
 	)
-	return err
+	if err != nil {
+		return err
+	}
+	n, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if n == 0 {
+		return fmt.Errorf("authorization code already used or not found")
+	}
+	return nil
 }

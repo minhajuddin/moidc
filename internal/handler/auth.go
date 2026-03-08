@@ -48,6 +48,21 @@ func (h *AuthHandler) Authorize(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if !isValidScope(scope) {
+		renderError(w, r, "Invalid Request", "Unsupported scope values. Supported: openid, profile, email.", http.StatusBadRequest)
+		return
+	}
+
+	if codeChallengeMethod != "" && codeChallengeMethod != "S256" {
+		renderError(w, r, "Invalid Request", "code_challenge_method must be 'S256'.", http.StatusBadRequest)
+		return
+	}
+
+	if len(state) > 512 || len(nonce) > 512 {
+		renderError(w, r, "Invalid Request", "state or nonce too long.", http.StatusBadRequest)
+		return
+	}
+
 	client, err := h.db.GetClient(clientID)
 	if err != nil {
 		renderError(w, r, "Invalid Client", "Unknown client_id.", http.StatusBadRequest)
@@ -133,7 +148,7 @@ func (h *AuthHandler) Consent(w http.ResponseWriter, r *http.Request) {
 	// Validate TOML claims
 	if profileTOML != "" {
 		if _, err := oidc.ParseTOMLClaims(profileTOML); err != nil {
-			renderError(w, r, "Invalid Claims", fmt.Sprintf("TOML error: %v", err), http.StatusBadRequest)
+			renderError(w, r, "Invalid Claims", "Invalid profile data. Please check your TOML syntax and ensure only scalar values are used.", http.StatusBadRequest)
 			return
 		}
 	}
@@ -165,7 +180,11 @@ func (h *AuthHandler) Consent(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	redirectURL, _ := url.Parse(redirectURI)
+	redirectURL, err := url.Parse(redirectURI)
+	if err != nil {
+		renderError(w, r, "Invalid Request", "Invalid redirect_uri.", http.StatusBadRequest)
+		return
+	}
 	q := redirectURL.Query()
 	q.Set("code", code)
 	if state != "" {
@@ -211,10 +230,12 @@ func (h *AuthHandler) Token(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if authCode.UsedAt != nil {
+	// Atomically mark code as used (prevents race condition with concurrent requests)
+	if err := h.db.MarkAuthCodeUsed(codeHash); err != nil {
 		tokenError(w, "invalid_grant", "Authorization code already used.", http.StatusBadRequest)
 		return
 	}
+
 	if time.Now().After(authCode.ExpiresAt) {
 		tokenError(w, "invalid_grant", "Authorization code expired.", http.StatusBadRequest)
 		return
@@ -240,12 +261,6 @@ func (h *AuthHandler) Token(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	// Mark code as used
-	if err := h.db.MarkAuthCodeUsed(codeHash); err != nil {
-		tokenError(w, "server_error", "Could not mark code as used.", http.StatusInternalServerError)
-		return
-	}
-
 	// Parse profile claims
 	var extraClaims map[string]interface{}
 	if authCode.ProfileSnapshot != "" {
@@ -262,21 +277,24 @@ func (h *AuthHandler) Token(w http.ResponseWriter, r *http.Request) {
 		Audience: clientID,
 		Nonce:    authCode.Nonce,
 		Email:    authCode.Email,
+		AuthTime: time.Now(),
 		Extra:    extraClaims,
 	}
 
 	idTokenExpiry := 1 * time.Hour
 	accessTokenExpiry := 1 * time.Hour
 
-	idToken, err := oidc.CreateIDToken(h.keyManager.SigningKey(), h.keyManager.SigningKID(), tokenClaims, idTokenExpiry)
-	if err != nil {
-		tokenError(w, "server_error", "Could not create ID token.", http.StatusInternalServerError)
-		return
-	}
-
+	// Create access token first so we can compute at_hash for the ID token
 	accessToken, err := oidc.CreateAccessToken(h.keyManager.EncryptionKey(), tokenClaims, accessTokenExpiry)
 	if err != nil {
 		tokenError(w, "server_error", "Could not create access token.", http.StatusInternalServerError)
+		return
+	}
+
+	tokenClaims.AccessToken = accessToken
+	idToken, err := oidc.CreateIDToken(h.keyManager.SigningKey(), h.keyManager.SigningKID(), tokenClaims, idTokenExpiry)
+	if err != nil {
+		tokenError(w, "server_error", "Could not create ID token.", http.StatusInternalServerError)
 		return
 	}
 
@@ -310,7 +328,11 @@ func isValidRedirectURI(allowed []string, uri string) bool {
 }
 
 func redirectWithError(w http.ResponseWriter, r *http.Request, redirectURI, state, errCode, errDesc string) {
-	u, _ := url.Parse(redirectURI)
+	u, err := url.Parse(redirectURI)
+	if err != nil {
+		renderError(w, r, "Invalid Request", "Invalid redirect_uri.", http.StatusBadRequest)
+		return
+	}
 	q := u.Query()
 	q.Set("error", errCode)
 	q.Set("error_description", errDesc)
@@ -330,4 +352,22 @@ func tokenError(w http.ResponseWriter, errCode, errDesc string, status int) {
 func sha256Hex(s string) string {
 	h := sha256.Sum256([]byte(s))
 	return hex.EncodeToString(h[:])
+}
+
+var supportedScopes = map[string]bool{
+	"openid":  true,
+	"profile": true,
+	"email":   true,
+}
+
+func isValidScope(scope string) bool {
+	if scope == "" {
+		return true
+	}
+	for _, s := range strings.Fields(scope) {
+		if !supportedScopes[s] {
+			return false
+		}
+	}
+	return true
 }

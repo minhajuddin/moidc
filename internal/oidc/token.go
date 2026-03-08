@@ -2,6 +2,8 @@ package oidc
 
 import (
 	"crypto/rsa"
+	"crypto/sha256"
+	"encoding/base64"
 	"fmt"
 	"time"
 
@@ -10,12 +12,14 @@ import (
 )
 
 type TokenClaims struct {
-	Issuer   string
-	Subject  string
-	Audience string
-	Nonce    string
-	Email    string
-	Extra    map[string]interface{}
+	Issuer      string
+	Subject     string
+	Audience    string
+	Nonce       string
+	Email       string
+	AuthTime    time.Time
+	AccessToken string // set before creating ID token, used to compute at_hash
+	Extra       map[string]interface{}
 }
 
 func CreateIDToken(key *rsa.PrivateKey, kid string, claims *TokenClaims, expiry time.Duration) (string, error) {
@@ -32,6 +36,12 @@ func CreateIDToken(key *rsa.PrivateKey, kid string, claims *TokenClaims, expiry 
 	}
 	if claims.Email != "" {
 		mapClaims["email"] = claims.Email
+	}
+	if !claims.AuthTime.IsZero() {
+		mapClaims["auth_time"] = claims.AuthTime.Unix()
+	}
+	if claims.AccessToken != "" {
+		mapClaims["at_hash"] = computeAtHash(claims.AccessToken)
 	}
 	for k, v := range claims.Extra {
 		if _, reserved := reservedClaims[k]; !reserved {
@@ -120,5 +130,10 @@ func DecryptAccessToken(encKey []byte, tokenStr string) (jwt.MapClaims, error) {
 
 var reservedClaims = map[string]bool{
 	"iss": true, "sub": true, "aud": true, "exp": true,
-	"iat": true, "nonce": true, "email": true,
+	"iat": true, "nonce": true, "email": true, "auth_time": true, "at_hash": true,
+}
+
+func computeAtHash(accessToken string) string {
+	h := sha256.Sum256([]byte(accessToken))
+	return base64.RawURLEncoding.EncodeToString(h[:16]) // left half of SHA-256
 }

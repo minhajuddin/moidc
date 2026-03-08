@@ -13,6 +13,7 @@ type Server struct {
 	db         *db.DB
 	keyManager *oidc.KeyManager
 	baseURL    string
+	handler    http.Handler
 }
 
 func New(database *db.DB, keyManager *oidc.KeyManager, baseURL string) *Server {
@@ -23,11 +24,12 @@ func New(database *db.DB, keyManager *oidc.KeyManager, baseURL string) *Server {
 		baseURL:    baseURL,
 	}
 	s.routes()
+	s.handler = securityHeaders(s.mux)
 	return s
 }
 
 func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	s.mux.ServeHTTP(w, r)
+	s.handler.ServeHTTP(w, r)
 }
 
 func (s *Server) routes() {
@@ -35,15 +37,22 @@ func (s *Server) routes() {
 	clientH := handler.NewClientHandler(s.db)
 	authH := handler.NewAuthHandler(s.db, s.keyManager, s.baseURL)
 
+	csrf := func(h http.HandlerFunc) http.Handler {
+		return csrfProtect(http.HandlerFunc(h))
+	}
+
+	rl := newRateLimiter()
+	rateLimit := rateLimitMiddleware(rl)
+
 	s.mux.HandleFunc("GET /{$}", s.handleHome)
-	s.mux.HandleFunc("GET /clients/register", clientH.RegisterForm)
-	s.mux.HandleFunc("POST /clients/register", clientH.Register)
+	s.mux.Handle("GET /clients/register", csrf(clientH.RegisterForm))
+	s.mux.Handle("POST /clients/register", rateLimit(csrf(clientH.Register)))
 	s.mux.HandleFunc("GET /.well-known/openid-configuration", oidcH.Discovery)
 	s.mux.HandleFunc("GET /.well-known/jwks.json", oidcH.JWKS)
-	s.mux.HandleFunc("GET /authorize", authH.Authorize)
-	s.mux.HandleFunc("POST /authorize/login", authH.Login)
-	s.mux.HandleFunc("POST /authorize/consent", authH.Consent)
-	s.mux.HandleFunc("POST /token", authH.Token)
+	s.mux.Handle("GET /authorize", csrf(authH.Authorize))
+	s.mux.Handle("POST /authorize/login", rateLimit(csrf(authH.Login)))
+	s.mux.Handle("POST /authorize/consent", csrf(authH.Consent))
+	s.mux.Handle("POST /token", rateLimit(http.HandlerFunc(authH.Token)))
 	s.mux.HandleFunc("GET /userinfo", oidcH.UserInfo)
 	s.mux.HandleFunc("POST /userinfo", oidcH.UserInfo)
 	s.mux.Handle("GET /static/", http.StripPrefix("/static/", http.FileServer(http.Dir("static"))))

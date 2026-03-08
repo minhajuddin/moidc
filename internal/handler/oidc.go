@@ -47,14 +47,20 @@ func (h *OIDCHandler) JWKS(w http.ResponseWriter, r *http.Request) {
 func (h *OIDCHandler) UserInfo(w http.ResponseWriter, r *http.Request) {
 	auth := r.Header.Get("Authorization")
 	if !strings.HasPrefix(auth, "Bearer ") {
-		http.Error(w, `{"error":"invalid_token"}`, http.StatusUnauthorized)
+		w.Header().Set("WWW-Authenticate", `Bearer realm="moidc"`)
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusUnauthorized)
+		w.Write([]byte(`{"error":"invalid_token","error_description":"Missing or invalid Authorization header"}`))
 		return
 	}
 	tokenStr := strings.TrimPrefix(auth, "Bearer ")
 
 	claims, err := oidc.DecryptAccessToken(h.keyManager.EncryptionKey(), tokenStr)
 	if err != nil {
-		http.Error(w, `{"error":"invalid_token"}`, http.StatusUnauthorized)
+		w.Header().Set("WWW-Authenticate", `Bearer realm="moidc", error="invalid_token"`)
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusUnauthorized)
+		w.Write([]byte(`{"error":"invalid_token","error_description":"Token is invalid or expired"}`))
 		return
 	}
 

@@ -1,6 +1,23 @@
 package templates
 
-templ ClientCreated(clientName, clientID, clientSecret string) {
+import (
+	"encoding/json"
+	"strings"
+)
+
+func clientJSON(clientName, clientID, clientSecret, email string, redirectURIs []string) string {
+	data := map[string]any{
+		"client_name":   clientName,
+		"client_id":     clientID,
+		"client_secret": clientSecret,
+		"email":         email,
+		"redirect_uris": redirectURIs,
+	}
+	b, _ := json.MarshalIndent(data, "", "  ")
+	return string(b)
+}
+
+templ ClientCreated(clientName, clientID, clientSecret, email string, redirectURIs []string) {
 	@Layout("Client Registered") {
 		<div class="space-y-6">
 			<h1 class="text-2xl font-bold text-gray-100">Client Registered Successfully</h1>
@@ -20,8 +37,25 @@ templ ClientCreated(clientName, clientID, clientSecret string) {
 					<label class="block text-sm font-medium text-gray-500">Client Secret</label>
 					<code class="block bg-gray-800 border border-gray-700 text-green-400 rounded px-3 py-2 text-sm font-mono break-all">{ clientSecret }</code>
 				</div>
+				<div>
+					<label class="block text-sm font-medium text-gray-500">Email</label>
+					<p class="text-gray-100">{ email }</p>
+				</div>
+				<div>
+					<label class="block text-sm font-medium text-gray-500">Redirect URIs</label>
+					<p class="text-gray-100">{ strings.Join(redirectURIs, ", ") }</p>
+				</div>
 			</div>
-			<a href="/clients/register" class="inline-block text-cyan-400 hover:text-cyan-300 hover:underline">Register another client</a>
+			<div class="flex items-center gap-4">
+				<a
+					download={ clientID + ".json" }
+					href={ templ.SafeURL("data:application/json;charset=utf-8," + clientJSON(clientName, clientID, clientSecret, email, redirectURIs)) }
+					class="inline-flex items-center gap-2 bg-cyan-600 hover:bg-cyan-500 text-white font-medium rounded-lg px-4 py-2 transition-colors"
+				>
+					Download Credentials (JSON)
+				</a>
+				<a href="/clients/register" class="text-cyan-400 hover:text-cyan-300 hover:underline">Register another client</a>
+			</div>
 		</div>
 	}
 }

@@ -85,7 +85,7 @@ func (h *ClientHandler) Register(w http.ResponseWriter, r *http.Request) {
 	}
 
 	slog.Info("client registered", "client_id", clientID, "client_name", clientName)
-	templates.ClientCreated(clientName, clientID, clientSecret).Render(r.Context(), w)
+	templates.ClientCreated(clientName, clientID, clientSecret, email, redirectURIs).Render(r.Context(), w)
 }
 
 func randomHex(n int) (string, error) {

@@ -41,7 +41,7 @@ func Consent(clientName, clientID, email, redirectURI, scope, state, nonce, code
 				}()
 			}
 			ctx = templ.InitializeContext(ctx)
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<div class=\"space-y-6\"><h1 class=\"text-2xl font-bold text-gray-900\">Authorize ")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<div class=\"space-y-6\"><h1 class=\"text-2xl font-bold text-gray-100\">Authorize ")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -54,20 +54,20 @@ func Consent(clientName, clientID, email, redirectURI, scope, state, nonce, code
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "</h1><p class=\"text-gray-600\">Signed in as <span class=\"font-medium\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "</h1><p class=\"text-gray-400\">Signed in as <span class=\"font-medium text-cyan-400\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var4 string
 			templ_7745c5c3_Var4, templ_7745c5c3_Err = templ.JoinStringErrs(email)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `templates/consent.templ`, Line: 8, Col: 50}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `templates/consent.templ`, Line: 8, Col: 64}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var4))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "</span>. Customize the claims that will be included in your ID token below.</p><form method=\"POST\" action=\"/authorize/consent\" id=\"consent-form\" class=\"bg-white rounded-lg shadow p-6 space-y-4\"><input type=\"hidden\" name=\"client_id\" value=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "</span>. Customize the claims that will be included in your ID token below.</p><form method=\"POST\" action=\"/authorize/consent\" id=\"consent-form\" class=\"bg-gray-900 border border-gray-700 rounded-lg p-6 space-y-4\"><input type=\"hidden\" name=\"client_id\" value=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -171,7 +171,7 @@ func Consent(clientName, clientID, email, redirectURI, scope, state, nonce, code
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 11, "\"><div><label for=\"profile_toml\" class=\"block text-sm font-medium text-gray-700 mb-1\">Profile Claims (TOML format — scalar values only)</label> <textarea id=\"profile_toml\" name=\"profile_toml\" rows=\"8\" class=\"w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 px-3 py-2 border font-mono text-sm\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 11, "\"><div><label for=\"profile_toml\" class=\"block text-sm font-medium text-gray-400 mb-1\">Profile Claims (TOML format — scalar values only)</label> <textarea id=\"profile_toml\" name=\"profile_toml\" rows=\"8\" class=\"w-full rounded-md bg-gray-800 border-gray-600 text-green-400 placeholder-gray-500 focus:border-cyan-500 focus:ring-cyan-500/30 focus:ring-2 px-3 py-2 border font-mono text-sm\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -184,7 +184,7 @@ func Consent(clientName, clientID, email, redirectURI, scope, state, nonce, code
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 12, "</textarea><p class=\"mt-1 text-xs text-gray-500\">These claims will be included in your ID token. Only scalar values (strings, numbers, booleans) are allowed.</p></div><div class=\"flex gap-3\"><button type=\"submit\" name=\"action\" value=\"approve\" class=\"flex-1 bg-green-600 text-white py-2 px-4 rounded-md hover:bg-green-700 font-medium\">Authorize</button> <button type=\"submit\" name=\"action\" value=\"deny\" class=\"flex-1 bg-gray-200 text-gray-700 py-2 px-4 rounded-md hover:bg-gray-300 font-medium\">Deny</button></div></form></div><script>\n\t\t\t(function() {\n\t\t\t\tconst clientId = document.querySelector('input[name=\"client_id\"]').value;\n\t\t\t\tconst email = document.querySelector('input[name=\"email\"]').value;\n\t\t\t\tconst storageKey = 'moidc_profile_' + clientId + '_' + email;\n\t\t\t\tconst textarea = document.getElementById('profile_toml');\n\t\t\t\tconst saved = localStorage.getItem(storageKey);\n\t\t\t\tif (saved) {\n\t\t\t\t\ttextarea.value = saved;\n\t\t\t\t}\n\t\t\t\tdocument.getElementById('consent-form').addEventListener('submit', function() {\n\t\t\t\t\tlocalStorage.setItem(storageKey, textarea.value);\n\t\t\t\t});\n\t\t\t})();\n\t\t</script>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 12, "</textarea><p class=\"mt-1 text-xs text-gray-500\">These claims will be included in your ID token. Only scalar values (strings, numbers, booleans) are allowed.</p></div><div class=\"flex gap-3\"><button type=\"submit\" name=\"action\" value=\"approve\" class=\"flex-1 bg-green-600 text-white py-2 px-4 rounded-md hover:bg-green-500 font-medium transition-colors\">Authorize</button> <button type=\"submit\" name=\"action\" value=\"deny\" class=\"flex-1 bg-gray-700 text-gray-300 py-2 px-4 rounded-md hover:bg-gray-600 border border-gray-600 font-medium transition-colors\">Deny</button></div></form></div><script>\n\t\t\t(function() {\n\t\t\t\tconst clientId = document.querySelector('input[name=\"client_id\"]').value;\n\t\t\t\tconst email = document.querySelector('input[name=\"email\"]').value;\n\t\t\t\tconst storageKey = 'moidc_profile_' + clientId + '_' + email;\n\t\t\t\tconst textarea = document.getElementById('profile_toml');\n\t\t\t\tconst saved = localStorage.getItem(storageKey);\n\t\t\t\tif (saved) {\n\t\t\t\t\ttextarea.value = saved;\n\t\t\t\t}\n\t\t\t\tdocument.getElementById('consent-form').addEventListener('submit', function() {\n\t\t\t\t\tlocalStorage.setItem(storageKey, textarea.value);\n\t\t\t\t});\n\t\t\t})();\n\t\t</script>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}

@@ -41,20 +41,20 @@ func Login(clientName, clientID, redirectURI, scope, state, nonce, codeChallenge
 				}()
 			}
 			ctx = templ.InitializeContext(ctx)
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<div class=\"space-y-6\"><h1 class=\"text-2xl font-bold text-gray-900\">Sign In</h1><p class=\"text-gray-600\"><span class=\"font-medium\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<div class=\"space-y-6\"><h1 class=\"text-2xl font-bold text-gray-100\">Sign In</h1><p class=\"text-gray-400\"><span class=\"font-medium text-cyan-400\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var3 string
 			templ_7745c5c3_Var3, templ_7745c5c3_Err = templ.JoinStringErrs(clientName)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `templates/login.templ`, Line: 8, Col: 42}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `templates/login.templ`, Line: 8, Col: 56}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var3))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "</span> is requesting access to your account.</p><form method=\"POST\" action=\"/authorize/login\" class=\"bg-white rounded-lg shadow p-6 space-y-4\"><input type=\"hidden\" name=\"client_id\" value=\"")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "</span> is requesting access to your account.</p><form method=\"POST\" action=\"/authorize/login\" class=\"bg-gray-900 border border-gray-700 rounded-lg p-6 space-y-4\"><input type=\"hidden\" name=\"client_id\" value=\"")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -145,7 +145,7 @@ func Login(clientName, clientID, redirectURI, scope, state, nonce, codeChallenge
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 9, "\"><div><label for=\"email\" class=\"block text-sm font-medium text-gray-700 mb-1\">Email Address</label> <input type=\"email\" id=\"email\" name=\"email\" required autofocus class=\"w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 px-3 py-2 border\" placeholder=\"user@example.com\"><p class=\"mt-1 text-xs text-gray-500\">No verification — just enter any email to sign in (demo mode).</p></div><button type=\"submit\" class=\"w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 font-medium\">Continue</button></form></div>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 9, "\"><div><label for=\"email\" class=\"block text-sm font-medium text-gray-400 mb-1\">Email Address</label> <input type=\"email\" id=\"email\" name=\"email\" required autofocus class=\"w-full rounded-md bg-gray-800 border-gray-600 text-gray-100 placeholder-gray-500 focus:border-cyan-500 focus:ring-cyan-500/30 focus:ring-2 px-3 py-2 border\" placeholder=\"user@example.com\"><p class=\"mt-1 text-xs text-gray-500\">No verification — just enter any email to sign in (demo mode).</p></div><button type=\"submit\" class=\"w-full bg-cyan-600 text-white py-2 px-4 rounded-md hover:bg-cyan-500 font-medium transition-colors\">Continue</button></form></div>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}

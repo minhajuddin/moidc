@@ -3,12 +3,12 @@ package templates
 templ Consent(clientName, clientID, email, redirectURI, scope, state, nonce, codeChallenge, codeChallengeMethod, defaultTOML string) {
 	@Layout("Authorize") {
 		<div class="space-y-6">
-			<h1 class="text-2xl font-bold text-gray-900">Authorize { clientName }</h1>
-			<p class="text-gray-600">
-				Signed in as <span class="font-medium">{ email }</span>.
+			<h1 class="text-2xl font-bold text-gray-100">Authorize { clientName }</h1>
+			<p class="text-gray-400">
+				Signed in as <span class="font-medium text-cyan-400">{ email }</span>.
 				Customize the claims that will be included in your ID token below.
 			</p>
-			<form method="POST" action="/authorize/consent" id="consent-form" class="bg-white rounded-lg shadow p-6 space-y-4">
+			<form method="POST" action="/authorize/consent" id="consent-form" class="bg-gray-900 border border-gray-700 rounded-lg p-6 space-y-4">
 				<input type="hidden" name="client_id" value={ clientID }/>
 				<input type="hidden" name="email" value={ email }/>
 				<input type="hidden" name="redirect_uri" value={ redirectURI }/>
@@ -18,21 +18,21 @@ templ Consent(clientName, clientID, email, redirectURI, scope, state, nonce, cod
 				<input type="hidden" name="code_challenge" value={ codeChallenge }/>
 				<input type="hidden" name="code_challenge_method" value={ codeChallengeMethod }/>
 				<div>
-					<label for="profile_toml" class="block text-sm font-medium text-gray-700 mb-1">
+					<label for="profile_toml" class="block text-sm font-medium text-gray-400 mb-1">
 						Profile Claims (TOML format — scalar values only)
 					</label>
 					<textarea id="profile_toml" name="profile_toml" rows="8"
-						class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 px-3 py-2 border font-mono text-sm"
+						class="w-full rounded-md bg-gray-800 border-gray-600 text-green-400 placeholder-gray-500 focus:border-cyan-500 focus:ring-cyan-500/30 focus:ring-2 px-3 py-2 border font-mono text-sm"
 					>{ defaultTOML }</textarea>
 					<p class="mt-1 text-xs text-gray-500">These claims will be included in your ID token. Only scalar values (strings, numbers, booleans) are allowed.</p>
 				</div>
 				<div class="flex gap-3">
 					<button type="submit" name="action" value="approve"
-						class="flex-1 bg-green-600 text-white py-2 px-4 rounded-md hover:bg-green-700 font-medium">
+						class="flex-1 bg-green-600 text-white py-2 px-4 rounded-md hover:bg-green-500 font-medium transition-colors">
 						Authorize
 					</button>
 					<button type="submit" name="action" value="deny"
-						class="flex-1 bg-gray-200 text-gray-700 py-2 px-4 rounded-md hover:bg-gray-300 font-medium">
+						class="flex-1 bg-gray-700 text-gray-300 py-2 px-4 rounded-md hover:bg-gray-600 border border-gray-600 font-medium transition-colors">
 						Deny
 					</button>
 				</div>

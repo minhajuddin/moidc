@@ -42,7 +42,7 @@ func Layout(title string) templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, " - moidc</title><link rel=\"stylesheet\" href=\"/static/output.css\"></head><body class=\"bg-gray-50 min-h-screen\"><div class=\"bg-red-600 text-white text-center py-2 px-4 font-bold text-sm\">This is a demo OIDC server. Do not use in production.</div><div class=\"max-w-2xl mx-auto px-4 py-8\"><header class=\"mb-8\"><a href=\"/\" class=\"text-2xl font-bold text-gray-900\">moidc</a><p class=\"text-gray-500 text-sm\">Minimum OIDC Server</p></header><main>")
+		templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, " - moidc</title><link rel=\"stylesheet\" href=\"/static/output.css\"></head><body class=\"bg-gray-950 text-gray-300 min-h-screen\"><div class=\"bg-amber-900/60 text-amber-200 text-center py-2 px-4 font-medium text-sm border-b border-amber-700/50\">This is a demo OIDC server. Do not use in production.</div><div class=\"max-w-2xl mx-auto px-4 py-8\"><header class=\"mb-8\"><a href=\"/\" class=\"text-2xl font-bold text-violet-400\">moidc</a><p class=\"text-gray-500 text-sm font-mono\">Minimum OIDC Server</p></header><main>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

@@ -41,7 +41,7 @@ func ClientCreated(clientName, clientID, clientSecret string) templ.Component {
 				}()
 			}
 			ctx = templ.InitializeContext(ctx)
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<div class=\"space-y-6\"><h1 class=\"text-2xl font-bold text-gray-900\">Client Registered Successfully</h1><div class=\"bg-yellow-50 border border-yellow-200 rounded-lg p-4\"><p class=\"text-yellow-800 font-medium\">Save these credentials now. The client secret will not be shown again.</p></div><div class=\"bg-white rounded-lg shadow p-6 space-y-4\"><div><label class=\"block text-sm font-medium text-gray-500\">Client Name</label><p class=\"text-gray-900 font-medium\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<div class=\"space-y-6\"><h1 class=\"text-2xl font-bold text-gray-100\">Client Registered Successfully</h1><div class=\"bg-amber-900/30 border border-amber-700/50 rounded-lg p-4\"><p class=\"text-amber-300 font-medium\">Save these credentials now. The client secret will not be shown again.</p></div><div class=\"bg-gray-900 border border-gray-700 rounded-lg p-6 space-y-4\"><div><label class=\"block text-sm font-medium text-gray-500\">Client Name</label><p class=\"text-gray-100 font-medium\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -54,33 +54,33 @@ func ClientCreated(clientName, clientID, clientSecret string) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "</p></div><div><label class=\"block text-sm font-medium text-gray-500\">Client ID</label> <code class=\"block bg-gray-100 rounded px-3 py-2 text-sm font-mono break-all\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "</p></div><div><label class=\"block text-sm font-medium text-gray-500\">Client ID</label> <code class=\"block bg-gray-800 border border-gray-700 text-green-400 rounded px-3 py-2 text-sm font-mono break-all\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var4 string
 			templ_7745c5c3_Var4, templ_7745c5c3_Err = templ.JoinStringErrs(clientID)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `templates/client_created.templ`, Line: 17, Col: 93}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `templates/client_created.templ`, Line: 17, Col: 131}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var4))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "</code></div><div><label class=\"block text-sm font-medium text-gray-500\">Client Secret</label> <code class=\"block bg-gray-100 rounded px-3 py-2 text-sm font-mono break-all\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 3, "</code></div><div><label class=\"block text-sm font-medium text-gray-500\">Client Secret</label> <code class=\"block bg-gray-800 border border-gray-700 text-green-400 rounded px-3 py-2 text-sm font-mono break-all\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var5 string
 			templ_7745c5c3_Var5, templ_7745c5c3_Err = templ.JoinStringErrs(clientSecret)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `templates/client_created.templ`, Line: 21, Col: 97}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `templates/client_created.templ`, Line: 21, Col: 135}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var5))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "</code></div></div><a href=\"/clients/register\" class=\"inline-block text-blue-600 hover:underline\">Register another client</a></div>")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 4, "</code></div></div><a href=\"/clients/register\" class=\"inline-block text-cyan-400 hover:text-cyan-300 hover:underline\">Register another client</a></div>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}

@@ -3,11 +3,11 @@ package templates
 templ Login(clientName, clientID, redirectURI, scope, state, nonce, codeChallenge, codeChallengeMethod string) {
 	@Layout("Sign In") {
 		<div class="space-y-6">
-			<h1 class="text-2xl font-bold text-gray-900">Sign In</h1>
-			<p class="text-gray-600">
-				<span class="font-medium">{ clientName }</span> is requesting access to your account.
+			<h1 class="text-2xl font-bold text-gray-100">Sign In</h1>
+			<p class="text-gray-400">
+				<span class="font-medium text-cyan-400">{ clientName }</span> is requesting access to your account.
 			</p>
-			<form method="POST" action="/authorize/login" class="bg-white rounded-lg shadow p-6 space-y-4">
+			<form method="POST" action="/authorize/login" class="bg-gray-900 border border-gray-700 rounded-lg p-6 space-y-4">
 				<input type="hidden" name="client_id" value={ clientID }/>
 				<input type="hidden" name="redirect_uri" value={ redirectURI }/>
 				<input type="hidden" name="scope" value={ scope }/>
@@ -16,14 +16,14 @@ templ Login(clientName, clientID, redirectURI, scope, state, nonce, codeChalleng
 				<input type="hidden" name="code_challenge" value={ codeChallenge }/>
 				<input type="hidden" name="code_challenge_method" value={ codeChallengeMethod }/>
 				<div>
-					<label for="email" class="block text-sm font-medium text-gray-700 mb-1">Email Address</label>
+					<label for="email" class="block text-sm font-medium text-gray-400 mb-1">Email Address</label>
 					<input type="email" id="email" name="email" required autofocus
-						class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 px-3 py-2 border"
+						class="w-full rounded-md bg-gray-800 border-gray-600 text-gray-100 placeholder-gray-500 focus:border-cyan-500 focus:ring-cyan-500/30 focus:ring-2 px-3 py-2 border"
 						placeholder="user@example.com"/>
 					<p class="mt-1 text-xs text-gray-500">No verification — just enter any email to sign in (demo mode).</p>
 				</div>
 				<button type="submit"
-					class="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 font-medium">
+					class="w-full bg-cyan-600 text-white py-2 px-4 rounded-md hover:bg-cyan-500 font-medium transition-colors">
 					Continue
 				</button>
 			</form>

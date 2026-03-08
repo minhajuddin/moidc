@@ -41,27 +41,27 @@ func Home(baseURL string) templ.Component {
 				}()
 			}
 			ctx = templ.InitializeContext(ctx)
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<div class=\"space-y-6\"><h1 class=\"text-3xl font-bold text-gray-900\">Welcome to moidc</h1><p class=\"text-gray-600\">A minimal OpenID Connect server for testing and learning OIDC flows. No passwords, no email verification — just enter an email and customize your token payload via TOML.</p><div class=\"bg-white rounded-lg shadow p-6 space-y-4\"><h2 class=\"text-xl font-semibold text-gray-800\">Getting Started</h2><ol class=\"list-decimal list-inside space-y-2 text-gray-600\"><li><a href=\"/clients/register\" class=\"text-blue-600 hover:underline\">Register a client</a> to get your client_id and client_secret</li><li>Use the standard OIDC authorization code flow to authenticate users</li><li>Customize ID token claims using TOML on the consent screen</li></ol></div><div class=\"bg-white rounded-lg shadow p-6 space-y-4\"><h2 class=\"text-xl font-semibold text-gray-800\">Endpoints</h2><div class=\"font-mono text-sm space-y-1 text-gray-600\"><p>Discovery: <a href=\"/.well-known/openid-configuration\" class=\"text-blue-600 hover:underline\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 1, "<div class=\"space-y-6\"><h1 class=\"text-3xl font-bold text-gray-100\">Welcome to moidc</h1><p class=\"text-gray-400\">A minimal OpenID Connect server for testing and learning OIDC flows. No passwords, no email verification — just enter an email and customize your token payload via TOML.</p><div class=\"bg-gray-900 border border-gray-700 rounded-lg p-6 space-y-4\"><h2 class=\"text-xl font-semibold text-gray-100\">Getting Started</h2><ol class=\"list-decimal list-inside space-y-2 text-gray-400\"><li><a href=\"/clients/register\" class=\"text-cyan-400 hover:text-cyan-300 hover:underline\">Register a client</a> to get your client_id and client_secret</li><li>Use the standard OIDC authorization code flow to authenticate users</li><li>Customize ID token claims using TOML on the consent screen</li></ol></div><div class=\"bg-gray-900 border border-gray-700 rounded-lg p-6 space-y-4\"><h2 class=\"text-xl font-semibold text-gray-100\">Endpoints</h2><div class=\"font-mono text-sm space-y-1 text-gray-400\"><p>Discovery: <a href=\"/.well-known/openid-configuration\" class=\"text-cyan-400 hover:text-cyan-300 hover:underline\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var3 string
 			templ_7745c5c3_Var3, templ_7745c5c3_Err = templ.JoinStringErrs(baseURL)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `templates/home.templ`, Line: 22, Col: 110}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `templates/home.templ`, Line: 22, Col: 130}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var3))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "/.well-known/openid-configuration</a></p><p>JWKS: <a href=\"/.well-known/jwks.json\" class=\"text-blue-600 hover:underline\">")
+			templ_7745c5c3_Err = templruntime.WriteString(templ_7745c5c3_Buffer, 2, "/.well-known/openid-configuration</a></p><p>JWKS: <a href=\"/.well-known/jwks.json\" class=\"text-cyan-400 hover:text-cyan-300 hover:underline\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var4 string
 			templ_7745c5c3_Var4, templ_7745c5c3_Err = templ.JoinStringErrs(baseURL)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `templates/home.templ`, Line: 23, Col: 94}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `templates/home.templ`, Line: 23, Col: 114}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var4))
 			if templ_7745c5c3_Err != nil {

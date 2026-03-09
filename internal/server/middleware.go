@@ -71,7 +71,8 @@ func csrfProtect(baseURL string) func(http.Handler) http.Handler {
 				}
 			}
 
-			next.ServeHTTP(w, r)
+				cw := &csrfResponseWriter{ResponseWriter: w, r: r}
+			next.ServeHTTP(cw, r)
 		})
 	}
 }

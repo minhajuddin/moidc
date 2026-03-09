@@ -1,0 +1,61 @@
+package templates
+
+templ Home(user *UserData) {
+	@Layout("Home") {
+		if user != nil {
+			<div class="bg-gray-900 border border-gray-700 rounded-lg p-6 space-y-4">
+				<div class="flex items-center gap-4 mb-4">
+					if user.Picture != "" {
+						<img src={ user.Picture } alt="avatar" class="w-16 h-16 rounded-full"/>
+					}
+					<div>
+						if user.Name != "" {
+							<h2 class="text-xl font-bold text-gray-100">{ user.Name }</h2>
+						}
+						if user.Email != "" {
+							<p class="text-gray-400">{ user.Email }</p>
+						}
+					</div>
+				</div>
+				<div class="space-y-2 text-sm">
+					<div>
+						<span class="text-gray-500">Sub:</span>
+						<code class="ml-2 text-green-400 font-mono">{ user.Sub }</code>
+					</div>
+					if user.PreferredUsername != "" {
+						<div>
+							<span class="text-gray-500">Username:</span>
+							<span class="ml-2 text-gray-100">{ user.PreferredUsername }</span>
+						</div>
+					}
+					if user.GivenName != "" {
+						<div>
+							<span class="text-gray-500">Given Name:</span>
+							<span class="ml-2 text-gray-100">{ user.GivenName }</span>
+						</div>
+					}
+					if user.FamilyName != "" {
+						<div>
+							<span class="text-gray-500">Family Name:</span>
+							<span class="ml-2 text-gray-100">{ user.FamilyName }</span>
+						</div>
+					}
+				</div>
+				<div class="pt-4 border-t border-gray-700">
+					<a href="/logout" class="text-red-400 hover:text-red-300 hover:underline text-sm">Logout</a>
+				</div>
+			</div>
+		} else {
+			<div class="text-center py-16 space-y-6">
+				<h1 class="text-3xl font-bold text-gray-100">Welcome</h1>
+				<p class="text-gray-400">Sign in with your moidc account to continue.</p>
+				<a
+					href="/login"
+					class="inline-block bg-violet-600 hover:bg-violet-500 text-white font-medium rounded-lg px-6 py-3 transition-colors"
+				>
+					Login with moidc
+				</a>
+			</div>
+		}
+	}
+}
